@@ -24,4 +24,25 @@ const deleteCard = (req: Request, res: Response) => {
     .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
 };
 
-export { getCards, createCard, deleteCard };
+// PUT /cards/:cardId/likes — поставить лайк карточке
+const likeCard = (req: Request, res: Response) => Card.findByIdAndUpdate(
+  req.params.cardId,
+  { $addToSet: { likes: res.locals.user._id } },
+  { new: true },
+)
+  .then((card) => res.send(card))
+  .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+
+// DELETE /cards/:cardId/likes — убрать лайк с карточки
+const dislikeCard = (req: Request, res: Response) => Card
+  .findByIdAndUpdate(
+    req.params.cardId,
+    { $pull: { likes: res.locals.user._id } },
+    { new: true },
+  )
+  .then((card) => res.send(card))
+  .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+
+export {
+  getCards, createCard, deleteCard, likeCard, dislikeCard,
+};

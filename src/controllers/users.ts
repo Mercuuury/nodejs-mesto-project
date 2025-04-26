@@ -24,4 +24,28 @@ const createUser = (req: Request, res: Response) => {
     .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
 };
 
-export { getUsers, getUserById, createUser };
+// PATCH /users/me — обновляет профиль
+const updateProfile = (req: Request, res: Response) => {
+  const { name, about } = req.body;
+
+  return User.findByIdAndUpdate(
+    res.locals.user._id,
+    { name, about },
+    { new: true, runValidators: true },
+  )
+    .then((user) => res.send(user))
+    .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+};
+
+// PATCH /users/me/avatar — обновляет аватар
+const updateAvatar = (req: Request, res: Response) => {
+  const { avatar } = req.body;
+
+  return User.findByIdAndUpdate(res.locals.user._id, { avatar })
+    .then((user) => res.send(user))
+    .catch(() => res.status(500).send({ message: 'Произошла ошибка' }));
+};
+
+export {
+  getUsers, getUserById, createUser, updateProfile, updateAvatar,
+};
