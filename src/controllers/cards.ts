@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
-import Card from '../models/card';
 import { BadRequestError, NotFoundError } from '../errors';
+import { HTTP_CREATED } from '../utils/constants';
+import Card from '../models/card';
+import sendResponse from '../utils/sendResponse';
 
 // GET /cards — возвращает все карточки
 const getCards = (req: Request, res: Response, next: NextFunction) => Card.find({})
-  .then((cards) => res.send(cards))
+  .then((cards) => sendResponse(res, cards))
   .catch(next);
 
 // POST /cards — создаёт карточку
@@ -12,7 +14,7 @@ const createCard = (req: Request, res: Response, next: NextFunction) => {
   const { name, link } = req.body;
 
   return Card.create({ name, link, owner: res.locals.user._id })
-    .then((card) => res.status(201).send(card))
+    .then((card) => sendResponse(res, card, HTTP_CREATED))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         next(new BadRequestError('Переданы некорректные данные при создании карточки'));
@@ -31,7 +33,7 @@ const deleteCard = (req: Request, res: Response, next: NextFunction) => {
       if (!card) {
         throw new NotFoundError('Карточка с указанным _id не найдена');
       }
-      res.send({ _id: card._id });
+      sendResponse(res, { _id: card._id });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -53,7 +55,7 @@ const likeCard = (req: Request, res: Response, next: NextFunction) => {
       if (!card) {
         throw new NotFoundError('Карточка с указанным _id не найдена');
       }
-      res.send(card);
+      sendResponse(res, card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -76,7 +78,7 @@ const dislikeCard = (req: Request, res: Response, next: NextFunction) => {
       if (!card) {
         throw new NotFoundError('Карточка с указанным _id не найдена');
       }
-      res.send(card);
+      sendResponse(res, card);
     })
     .catch((err) => {
       if (err.name === 'CastError') {

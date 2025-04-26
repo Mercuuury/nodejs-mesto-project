@@ -1,5 +1,5 @@
 {
-  "name": "starterkits",
+  "name": "Mesto backend",
   "version": "1.0.0",
   "description": "Backend для интерактивной галереи Mesto",
   "main": "dist/app.js",
@@ -7,7 +7,7 @@
     "lint": "npx eslint src/**/*.ts",
     "build": "tsc",
     "dev": "ts-node-dev src/app.ts",
-    "start": "ts-node dist/app.js",
+    "start": "ts-node src/app.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Mercuuury",
