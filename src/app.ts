@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import { InternalServerError } from './errors';
-import { HTTP_INTERNAL_SERVER_ERROR } from './utils/constants';
+import { HTTP_INTERNAL_SERVER_ERROR, HTTP_NOT_FOUND } from './utils/constants';
 import { cardsRouter, usersRouter } from './routes';
 
 const { PORT = 3000 } = process.env;
@@ -25,8 +25,11 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use('/users', usersRouter);
 app.use('/cards', cardsRouter);
 
-// eslint-disable-next-line no-unused-vars
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+app.use((req: Request, res: Response, _next: NextFunction) => {
+  res.status(HTTP_NOT_FOUND).send({ message: 'Not found' });
+});
+
+app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
   const statusCode = err.statusCode || HTTP_INTERNAL_SERVER_ERROR;
   const message = statusCode === HTTP_INTERNAL_SERVER_ERROR
     ? new InternalServerError().message
@@ -36,6 +39,5 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 });
 
 app.listen(PORT, () => {
-  // eslint-disable-next-line no-console
   console.log(`Сервер успешно запущен на порту ${PORT}.`);
 });
