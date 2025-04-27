@@ -1,11 +1,13 @@
+import cookieParser from 'cookie-parser';
 import express from 'express';
 import mongoose from 'mongoose';
-import cookieParser from 'cookie-parser';
+import { createUser, login } from './controllers/users';
 import {
   auth, errorHandler, errorLogger, requestLogger, routeInvalidator,
+  validateRequest,
 } from './middlewares';
 import { cardsRouter, usersRouter } from './routes';
-import { createUser, login } from './controllers/users';
+import { loginSchema, registerSchema } from './schemas/auth';
 
 const { PORT = 3000 } = process.env;
 
@@ -18,8 +20,8 @@ mongoose.connect('mongodb://localhost:27017/mestodb');
 
 app.use(requestLogger);
 
-app.post('/signin', login);
-app.post('/signup', createUser);
+app.post('/signin', validateRequest({ body: loginSchema }), login);
+app.post('/signup', validateRequest({ body: registerSchema }), createUser);
 
 app.use(auth);
 
