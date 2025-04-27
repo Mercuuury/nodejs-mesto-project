@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
-import { BadRequestError, ForbiddenError, NotFoundError } from '../errors';
-import { HTTP_CREATED } from '../utils/constants';
+import { NextFunction, Request, Response } from 'express';
+import { ForbiddenError, NotFoundError } from '../errors';
 import Card from '../models/card';
+import { HTTP_CREATED } from '../utils/constants';
 import sendResponse from '../utils/sendResponse';
 
 // GET /cards — возвращает все карточки
@@ -10,47 +10,28 @@ const getCards = (req: Request, res: Response, next: NextFunction) => Card.find(
   .catch(next);
 
 // POST /cards — создаёт карточку
-const createCard = (req: Request, res: Response, next: NextFunction) => {
-  const { name, link } = req.body;
-
-  return Card.create({ name, link, owner: req.user?._id })
-    .then((card) => sendResponse(res, card, HTTP_CREATED))
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        next(new BadRequestError('Переданы некорректные данные при создании карточки'));
-      } else {
-        next(err);
-      }
-    });
-};
+const createCard = (req: Request, res: Response, next: NextFunction) => Card.create({
+  ...req.body,
+  owner: req.user?._id,
+})
+  .then((card) => sendResponse(res, card, HTTP_CREATED))
+  .catch(next);
 
 // DELETE /cards/:cardId — удаляет карточку по идентификатору
-const deleteCard = (req: Request, res: Response, next: NextFunction) => {
-  const { cardId } = req.params;
+const deleteCard = (req: Request, res: Response, next: NextFunction) => Card.findById(
+  req.params.cardId,
+)
+  .then((card) => {
+    if (!card) throw new NotFoundError('Карточка с указанным _id не найдена');
 
-  return Card.findById(cardId)
-    .then((card) => {
-      if (!card) {
-        throw new NotFoundError('Карточка с указанным _id не найдена');
-      }
+    if (card.owner.toString() !== req.user?._id.toString()) {
+      throw new ForbiddenError('У вас нет прав для удаления этой карточки');
+    }
 
-      if (card.owner.toString() !== req.user?._id.toString()) {
-        throw new ForbiddenError('У вас нет прав для удаления этой карточки');
-      }
-
-      return card.remove();
-    })
-    .then((card) => {
-      sendResponse(res, { _id: card._id });
-    })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        next(new BadRequestError('Передан некорректный _id карточки'));
-      } else {
-        next(err);
-      }
-    });
-};
+    return card.remove();
+  })
+  .then((card) => sendResponse(res, { _id: card._id }))
+  .catch(next);
 
 // PUT /cards/:cardId/likes — поставить лайк карточке
 const likeCard = (req: Request, res: Response, next: NextFunction) => {
@@ -60,18 +41,10 @@ const likeCard = (req: Request, res: Response, next: NextFunction) => {
     { new: true },
   )
     .then((card) => {
-      if (!card) {
-        throw new NotFoundError('Карточка с указанным _id не найдена');
-      }
+      if (!card) throw new NotFoundError('Карточка с указанным _id не найдена');
       sendResponse(res, card);
     })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        next(new BadRequestError('Переданы некорректные данные для постановки лайка или некорректный _id карточки'));
-      } else {
-        next(err);
-      }
-    });
+    .catch(next);
 };
 
 // DELETE /cards/:cardId/likes — убрать лайк с карточки
@@ -83,20 +56,12 @@ const dislikeCard = (req: Request, res: Response, next: NextFunction) => {
       { new: true },
     )
     .then((card) => {
-      if (!card) {
-        throw new NotFoundError('Карточка с указанным _id не найдена');
-      }
+      if (!card) throw new NotFoundError('Карточка с указанным _id не найдена');
       sendResponse(res, card);
     })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        next(new BadRequestError('Переданы некорректные данные для снятия лайка или некорректный _id карточки'));
-      } else {
-        next(err);
-      }
-    });
+    .catch(next);
 };
 
 export {
-  getCards, createCard, deleteCard, likeCard, dislikeCard,
+  createCard, deleteCard, dislikeCard, getCards, likeCard,
 };
