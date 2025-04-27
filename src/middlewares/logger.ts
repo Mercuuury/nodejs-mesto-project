@@ -4,12 +4,14 @@ import 'winston-daily-rotate-file';
 
 const requestTransport = new winston.transports.DailyRotateFile({
   filename: 'request-%DATE%.log',
+  dirname: 'logs',
   datePattern: 'YYYY-MM-DD',
   maxFiles: 7,
 });
 
 const errorTransport = new winston.transports.DailyRotateFile({
   filename: 'error-%DATE%.log',
+  dirname: 'logs',
   datePattern: 'YYYY-MM-DD',
   maxFiles: 7,
 });
