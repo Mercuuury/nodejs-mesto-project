@@ -1,7 +1,13 @@
+import bcrypt from 'bcryptjs';
 import { NextFunction, Request, Response } from 'express';
-import { BadRequestError, NotFoundError } from '../errors';
-import { HTTP_CREATED } from '../utils/constants';
+import jwt from 'jsonwebtoken';
+import {
+  BadRequestError, ConflictError, NotFoundError, UnauthorizedError,
+} from '../errors';
 import User from '../models/user';
+import {
+  HTTP_CREATED, SALT_ROUNDS, JWT_SECRET, WEEK_IN_MS,
+} from '../utils/constants';
 import sendResponse from '../utils/sendResponse';
 
 // GET /users — возвращает всех пользователей
@@ -31,13 +37,23 @@ const getUserById = (req: Request, res: Response, next: NextFunction) => {
 
 // POST /users — создаёт пользователя
 const createUser = (req: Request, res: Response, next: NextFunction) => {
-  const { name, about, avatar } = req.body;
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
 
-  return User.create({ name, about, avatar })
-    .then((user) => sendResponse(res, user, HTTP_CREATED))
+  bcrypt.hash(password, SALT_ROUNDS)
+    .then((hash) => User.create({
+      name, about, avatar, email, password: hash,
+    }))
+    .then((user) => {
+      const { password: _password, ...userWithoutPassword } = user.toObject();
+      sendResponse(res, userWithoutPassword, HTTP_CREATED);
+    })
     .catch((err) => {
       if (err.name === 'ValidationError') {
         next(new BadRequestError('Переданы некорректные данные при создании пользователя'));
+      } else if (err.code === 11000) {
+        next(new ConflictError('Пользователь с таким email уже существует'));
       } else {
         next(err);
       }
@@ -49,7 +65,7 @@ const updateProfile = (req: Request, res: Response, next: NextFunction) => {
   const { name, about } = req.body;
 
   return User.findByIdAndUpdate(
-    res.locals.user._id,
+    req.body.user._id,
     { name, about },
     { new: true, runValidators: true },
   )
@@ -72,7 +88,7 @@ const updateProfile = (req: Request, res: Response, next: NextFunction) => {
 const updateAvatar = (req: Request, res: Response, next: NextFunction) => {
   const { avatar } = req.body;
 
-  return User.findByIdAndUpdate(res.locals.user._id, { avatar }, { new: true, runValidators: true })
+  return User.findByIdAndUpdate(req.body.user._id, { avatar }, { new: true, runValidators: true })
     .then((user) => {
       if (!user) {
         throw new NotFoundError('Пользователь c указанным _id не найден');
@@ -88,6 +104,31 @@ const updateAvatar = (req: Request, res: Response, next: NextFunction) => {
     });
 };
 
+const login = (req: Request, res: Response, next: NextFunction) => {
+  const { email, password } = req.body;
+
+  return User.findOne({ email }).select('+password')
+    .then((user) => {
+      if (!user) {
+        throw new UnauthorizedError('Неправильные почта или пароль');
+      }
+
+      return bcrypt.compare(password, user.password)
+        .then((matched) => {
+          if (!matched) {
+            throw new UnauthorizedError('Неправильные почта или пароль');
+          }
+
+          const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' });
+
+          res
+            .cookie('jwt', token, { httpOnly: true, sameSite: true, maxAge: WEEK_IN_MS })
+            .send({ message: 'Пользователь был успешно авторизован' });
+        });
+    })
+    .catch(next);
+};
+
 export {
-  getUsers, getUserById, createUser, updateProfile, updateAvatar,
+  createUser, getUserById, getUsers, login, updateAvatar, updateProfile,
 };
