@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { BadRequestError, NotFoundError } from '../errors';
+import { BadRequestError, ForbiddenError, NotFoundError } from '../errors';
 import { HTTP_CREATED } from '../utils/constants';
 import Card from '../models/card';
 import sendResponse from '../utils/sendResponse';
@@ -28,11 +28,19 @@ const createCard = (req: Request, res: Response, next: NextFunction) => {
 const deleteCard = (req: Request, res: Response, next: NextFunction) => {
   const { cardId } = req.params;
 
-  return Card.findByIdAndDelete(cardId)
+  return Card.findById(cardId)
     .then((card) => {
       if (!card) {
         throw new NotFoundError('Карточка с указанным _id не найдена');
       }
+
+      if (card.owner.toString() !== req.user?._id.toString()) {
+        throw new ForbiddenError('У вас нет прав для удаления этой карточки');
+      }
+
+      return card.remove();
+    })
+    .then((card) => {
       sendResponse(res, { _id: card._id });
     })
     .catch((err) => {
