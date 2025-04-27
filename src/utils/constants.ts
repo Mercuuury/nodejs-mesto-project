@@ -16,3 +16,4 @@ export const JWT_SECRET = 'super-strong-secret'; // TODO: Вынести в .env
 
 // Date & Time
 export const WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000;
+export const FIFTEEN_MINUTES = 15 * 60 * 1000;
