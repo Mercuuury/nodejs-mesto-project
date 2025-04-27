@@ -65,7 +65,7 @@ const updateProfile = (req: Request, res: Response, next: NextFunction) => {
   const { name, about } = req.body;
 
   return User.findByIdAndUpdate(
-    req.body.user._id,
+    req.user?._id,
     { name, about },
     { new: true, runValidators: true },
   )
@@ -88,7 +88,7 @@ const updateProfile = (req: Request, res: Response, next: NextFunction) => {
 const updateAvatar = (req: Request, res: Response, next: NextFunction) => {
   const { avatar } = req.body;
 
-  return User.findByIdAndUpdate(req.body.user._id, { avatar }, { new: true, runValidators: true })
+  return User.findByIdAndUpdate(req.user?._id, { avatar }, { new: true, runValidators: true })
     .then((user) => {
       if (!user) {
         throw new NotFoundError('Пользователь c указанным _id не найден');

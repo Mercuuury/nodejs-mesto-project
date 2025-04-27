@@ -13,7 +13,7 @@ const getCards = (req: Request, res: Response, next: NextFunction) => Card.find(
 const createCard = (req: Request, res: Response, next: NextFunction) => {
   const { name, link } = req.body;
 
-  return Card.create({ name, link, owner: req.body.user._id })
+  return Card.create({ name, link, owner: req.user?._id })
     .then((card) => sendResponse(res, card, HTTP_CREATED))
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -48,7 +48,7 @@ const deleteCard = (req: Request, res: Response, next: NextFunction) => {
 const likeCard = (req: Request, res: Response, next: NextFunction) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
-    { $addToSet: { likes: req.body.user._id } },
+    { $addToSet: { likes: req.user?._id } },
     { new: true },
   )
     .then((card) => {
@@ -71,7 +71,7 @@ const dislikeCard = (req: Request, res: Response, next: NextFunction) => {
   Card
     .findByIdAndUpdate(
       req.params.cardId,
-      { $pull: { likes: req.body.user._id } },
+      { $pull: { likes: req.user?._id } },
       { new: true },
     )
     .then((card) => {
