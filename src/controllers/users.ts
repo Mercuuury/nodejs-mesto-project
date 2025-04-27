@@ -60,6 +60,18 @@ const createUser = (req: Request, res: Response, next: NextFunction) => {
     });
 };
 
+// GET /users/me — возвращает профиль авторизованного пользователя
+const getProfile = (req: Request, res: Response, next: NextFunction) => {
+  User.findById(req.user?._id)
+    .then((user) => {
+      if (!user) {
+        throw new NotFoundError('Пользователь c указанным _id не найден');
+      }
+      sendResponse(res, user);
+    })
+    .catch(next);
+};
+
 // PATCH /users/me — обновляет профиль
 const updateProfile = (req: Request, res: Response, next: NextFunction) => {
   const { name, about } = req.body;
@@ -130,5 +142,5 @@ const login = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export {
-  createUser, getUserById, getUsers, login, updateAvatar, updateProfile,
+  getUsers, getUserById, createUser, getProfile, updateProfile, updateAvatar, login,
 };
